@@ -18,7 +18,31 @@ func TestMain(t *testing.T) {
 // get result
 // modify result
 
-func TestSsh(t *testing.T) {
-	sshCommand("localhost", "22", "pwd")
+func TestReadConfig(t *testing.T) {
+	testConns := readConfig("./machine_test.list")
+	if len(testConns) != 2 {
+		t.Errorf("Expected getting two objects. Got %d", len(testConns))
+	}
+	if testConns[0].User != "admin" {
+		t.Errorf("Expected getting %s. Got %s", "admin", testConns[0].User)
+	}
+	if testConns[0].Host != "127.0.0.1" {
+		t.Errorf("Expected getting %s. Got %s", "127.0.0.1", testConns[0].Host)
+	}
+	if testConns[0].Port != "22" {
+		t.Errorf("Expected getting %s. Got %s", "22", testConns[0].Port)
+	}
 
+}
+
+func TestSsh(t *testing.T) {
+	expected_out := ""
+	expected_err := "ssh: connect to host localhost port 22: Connection refused\r\n"
+	out, err := sshCommand("localhost", "22", "pwd")
+	if err != expected_err {
+		t.Errorf("Expected getting error " + expected_err + " Got " + err)
+	}
+	if out != expected_out {
+		t.Errorf("Expected getting " + expected_out + " Got " + out)
+	}
 }

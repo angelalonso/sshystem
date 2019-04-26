@@ -17,7 +17,7 @@ type Connection struct {
 }
 
 func main() {
-	conns := readConfig("./machine_test.list")
+	conns := readConfig("./machine.list")
 	fmt.Println(conns)
 }
 
@@ -46,12 +46,12 @@ func readConfig(configfile string) []Connection {
 	return connections
 }
 
-func sshCommand(endpoint string, port string, command string) {
+func sshCommand(endpoint string, port string, command string) (string, string) {
 	ssh_binary := "/usr/bin/ssh"
 	cmd := exec.Command(ssh_binary, endpoint, "-p "+port, command)
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
-	err := cmd.Run()
-	fmt.Println("out:", outb.String(), "err:", errb.String(), err)
+	cmd.Run()
+	return outb.String(), errb.String()
 }
