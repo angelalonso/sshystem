@@ -7,17 +7,22 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
-func main() {
-	//param_endpoint := "user@localhost"
-	//param_port := "2"
-	//param_command := `"whoami"`
-	//sshCommand(param_endpoint, param_port, param_command)
-	readConfig("./machine_test.list")
+type Connection struct {
+	User string
+	Host string
+	Port string
 }
 
-func readConfig(configfile string) {
+func main() {
+	conns := readConfig("./machine_test.list")
+	fmt.Println(conns)
+}
+
+func readConfig(configfile string) []Connection {
+	var connections []Connection
 	file, err := os.Open(configfile)
 	if err != nil {
 		log.Fatal(err)
@@ -26,14 +31,19 @@ func readConfig(configfile string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		// TODO: create a struct, fill up an array of that struct and return it to be able to run ssh to each entry on that array
-		fmt.Println(scanner.Text())
+		line := strings.Fields(scanner.Text())
+		newConnection := Connection{
+			User: line[0],
+			Host: line[1],
+			Port: line[2],
+		}
+		connections = append(connections, newConnection)
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-
+	return connections
 }
 
 func sshCommand(endpoint string, port string, command string) {
