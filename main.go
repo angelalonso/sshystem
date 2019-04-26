@@ -18,7 +18,7 @@ type Connection struct {
 
 func main() {
 	conns := readConfig("./machine.list")
-	fmt.Println(conns)
+	getResults(conns)
 }
 
 func readConfig(configfile string) []Connection {
@@ -32,12 +32,14 @@ func readConfig(configfile string) []Connection {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Fields(scanner.Text())
-		newConnection := Connection{
-			User: line[0],
-			Host: line[1],
-			Port: line[2],
+		if len(line) > 2 {
+			newConnection := Connection{
+				User: line[0],
+				Host: line[1],
+				Port: line[2],
+			}
+			connections = append(connections, newConnection)
 		}
-		connections = append(connections, newConnection)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -54,4 +56,20 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 	cmd.Stderr = &errb
 	cmd.Run()
 	return outb.String(), errb.String()
+}
+
+func getResults(conns []Connection) {
+	// TODO: move the commands to a list file too
+	commands := []string{
+		"hostname",
+		"free -m -h",
+		"/opt/vc/bin/vcgencmd measure_temp",
+		"df -h",
+		"df -i"}
+	for _, conn := range conns {
+		for _, command := range commands {
+			out, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, command)
+			fmt.Println(out)
+		}
+	}
 }
