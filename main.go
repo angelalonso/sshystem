@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -65,22 +66,52 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 	return outb.String(), errb.String()
 }
 
-// TODO: format this to receive result and work with it
-func formatMem(memRaw string) {
-	fmt.Println(memRaw)
-}
-
 func getResults(conns []Connection) {
 	// TODO: move the commands to a list file too
 	commands := []string{
-		"hostname",
-		"/opt/vc/bin/vcgencmd measure_temp",
 		"df -h",
 		"df -i"}
 	for _, conn := range conns {
+		fmt.Println(conn.Host)
+
+		outMem, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/usr/bin/free")
+		memMetric := formatMem(outMem)
+		percentage := float64(memMetric.Current) / float64(memMetric.Max) * 100
+		fmt.Printf("Mem: %0.2f%%\n", percentage)
+
+		outTemp, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/opt/vc/bin/vcgencmd measure_temp")
+		tempMetric := formatTemp(outTemp)
+		fmt.Printf("Temp: %0.2f °C\n", tempMetric.Current)
+
 		for _, command := range commands {
 			out, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, command)
 			fmt.Println(out)
 		}
 	}
+}
+
+func formatMem(memRaw string) Metric {
+	formatted := strings.Split(memRaw, "\n")
+	total, _ := strconv.Atoi(strings.Fields(formatted[1])[1])
+	free, _ := strconv.Atoi(strings.Fields(formatted[1])[3])
+	used := total - free
+	memMetric := Metric{
+		Name:    "Mem",
+		Machine: "",
+		Max:     float64(total),
+		Current: float64(used),
+	}
+	return memMetric
+}
+
+func formatTemp(tempRaw string) Metric {
+	tempNDegrees := strings.Split(tempRaw, "=")[1]
+	current, _ := strconv.ParseFloat(tempNDegrees[:len(tempNDegrees)-3], 64)
+	memMetric := Metric{
+		Name:    "Temp",
+		Machine: "",
+		Max:     0,
+		Current: current,
+	}
+	return memMetric
 }

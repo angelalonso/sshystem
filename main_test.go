@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
-	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -56,16 +54,15 @@ func TestFormatMem(t *testing.T) {
 	if err != "" {
 		t.Errorf("Expected Not getting any error, but got " + err)
 	}
-	formatted := strings.Split(out, "\n")
-	total, _ := strconv.Atoi(strings.Fields(formatted[1])[1])
-	free, _ := strconv.Atoi(strings.Fields(formatted[1])[3])
-	used := total - free
-	percentage := float64(used) / float64(total) * 100
-	fmt.Println(total)
-	fmt.Println(free)
-	fmt.Println(used)
-	fmt.Printf("%0.2f %%", percentage)
+	mem := formatMem(out)
+	percentage := float64(mem.Current) / float64(mem.Max) * 100
+	fmt.Printf("%0.2f %%\n", percentage)
+}
 
+func TestFormatTemp(t *testing.T) {
+	out := "temp=52.1'C\n"
+	temp := formatTemp(out)
+	fmt.Printf("%0.2f °C\n", temp.Current)
 }
 
 func mockCommand(command string, params ...string) (string, string) {
