@@ -68,15 +68,13 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 
 func getResults(conns []Connection) {
 	// TODO: move the commands to a list file too
-	commands := []string{
-		"df /"}
 	for _, conn := range conns {
 		fmt.Println(conn.Host)
 
 		outMem, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/usr/bin/free")
 		memMetric := formatMem(outMem)
 		memPercentage := float64(memMetric.Current) / float64(memMetric.Max) * 100
-		fmt.Printf("Mem: %0.2f%%\n", memPercentage)
+		fmt.Printf("Mem: %0.2f %%\n", memPercentage)
 
 		outTemp, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/opt/vc/bin/vcgencmd measure_temp")
 		tempMetric := formatTemp(outTemp)
@@ -85,7 +83,7 @@ func getResults(conns []Connection) {
 		outDisk, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "df /")
 		diskMetric := formatDisk(outDisk)
 		diskPercentage := float64(diskMetric.Current) / float64(diskMetric.Max) * 100
-		fmt.Printf("Disk: %0.2f%%\n", diskPercentage)
+		fmt.Printf("Disk: %0.2f %%\n", diskPercentage)
 	}
 }
 
