@@ -16,6 +16,13 @@ type Connection struct {
 	Port string
 }
 
+type Metric struct {
+	Name    string
+	Machine string
+	Max     float64
+	Current float64
+}
+
 func main() {
 	conns := readConfig("./machine.list")
 	getResults(conns)
@@ -58,11 +65,15 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 	return outb.String(), errb.String()
 }
 
+// TODO: format this to receive result and work with it
+func formatMem(memRaw string) {
+	fmt.Println(memRaw)
+}
+
 func getResults(conns []Connection) {
 	// TODO: move the commands to a list file too
 	commands := []string{
 		"hostname",
-		"free -m -h",
 		"/opt/vc/bin/vcgencmd measure_temp",
 		"df -h",
 		"df -i"}

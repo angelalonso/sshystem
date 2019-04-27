@@ -1,6 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -12,12 +17,8 @@ func TestMain(t *testing.T) {
 }
 
 //What should the script do?
-// read config file
-// ssh to machine
-// run command
-// get result
-// modify result
 
+// TEST: read config file
 func TestReadConfig(t *testing.T) {
 	testConns := readConfig("./machine_test.list")
 	if len(testConns) != 2 {
@@ -35,6 +36,7 @@ func TestReadConfig(t *testing.T) {
 
 }
 
+// TEST: ssh to machine
 func TestSsh(t *testing.T) {
 	expected_out := ""
 	expected_err := "ssh: connect to host localhost port 22: Connection refused\r\n"
@@ -45,4 +47,32 @@ func TestSsh(t *testing.T) {
 	if out != expected_out {
 		t.Errorf("Expected getting " + expected_out + " Got " + out)
 	}
+}
+
+// TODO: run command
+// TODO: modify result
+func TestFormatMem(t *testing.T) {
+	out, err := mockCommand("/usr/bin/free", "")
+	if err != "" {
+		t.Errorf("Expected Not getting any error, but got " + err)
+	}
+	formatted := strings.Split(out, "\n")
+	total, _ := strconv.Atoi(strings.Fields(formatted[1])[1])
+	free, _ := strconv.Atoi(strings.Fields(formatted[1])[3])
+	used := total - free
+	percentage := float64(used) / float64(total) * 100
+	fmt.Println(total)
+	fmt.Println(free)
+	fmt.Println(used)
+	fmt.Printf("%0.2f %%", percentage)
+
+}
+
+func mockCommand(command string, params ...string) (string, string) {
+	cmd := exec.Command(command, params...)
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	cmd.Run()
+	return outb.String(), errb.String()
 }
