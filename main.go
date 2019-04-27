@@ -69,24 +69,23 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 func getResults(conns []Connection) {
 	// TODO: move the commands to a list file too
 	commands := []string{
-		"df -h",
-		"df -i"}
+		"df /"}
 	for _, conn := range conns {
 		fmt.Println(conn.Host)
 
 		outMem, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/usr/bin/free")
 		memMetric := formatMem(outMem)
-		percentage := float64(memMetric.Current) / float64(memMetric.Max) * 100
-		fmt.Printf("Mem: %0.2f%%\n", percentage)
+		memPercentage := float64(memMetric.Current) / float64(memMetric.Max) * 100
+		fmt.Printf("Mem: %0.2f%%\n", memPercentage)
 
 		outTemp, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/opt/vc/bin/vcgencmd measure_temp")
 		tempMetric := formatTemp(outTemp)
 		fmt.Printf("Temp: %0.2f °C\n", tempMetric.Current)
 
-		for _, command := range commands {
-			out, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, command)
-			fmt.Println(out)
-		}
+		outDisk, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "df /")
+		diskMetric := formatDisk(outDisk)
+		diskPercentage := float64(diskMetric.Current) / float64(diskMetric.Max) * 100
+		fmt.Printf("Disk: %0.2f%%\n", diskPercentage)
 	}
 }
 
@@ -114,4 +113,17 @@ func formatTemp(tempRaw string) Metric {
 		Current: current,
 	}
 	return memMetric
+}
+
+func formatDisk(diskRaw string) Metric {
+	formatted := strings.Split(diskRaw, "\n")
+	total, _ := strconv.Atoi(strings.Fields(formatted[1])[1])
+	used, _ := strconv.Atoi(strings.Fields(formatted[1])[2])
+	diskMetric := Metric{
+		Name:    "Mem",
+		Machine: "",
+		Max:     float64(total),
+		Current: float64(used),
+	}
+	return diskMetric
 }
