@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -26,8 +27,9 @@ type Metric struct {
 }
 
 func main() {
-	conns := readConfig("./machine.list")
-	getResults(conns)
+	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	conns := readConfig(dir + "/machine.list")
+	getResults(conns, dir)
 }
 
 func readConfig(configfile string) []Connection {
@@ -67,7 +69,7 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 	return outb.String(), errb.String()
 }
 
-func getResults(conns []Connection) {
+func getResults(conns []Connection, maindir string) {
 	// TODO: move the commands to a list file too
 	metrics := []Metric{}
 	for _, conn := range conns {
@@ -81,7 +83,7 @@ func getResults(conns []Connection) {
 		metrics = append(metrics, getMetricDisk(outDisk, conn.Host))
 	}
 	//fmt.Println(metrics)
-	saveResults(metrics, "./metrics.csv")
+	saveResults(metrics, maindir+"/metrics.csv")
 }
 
 func getMetricMem(memRaw string, machine string) Metric {
