@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Connection struct {
@@ -20,8 +21,8 @@ type Connection struct {
 type Metric struct {
 	Machine string
 	Name    string
-	Max     float64
-	Current float64
+	Max     float32
+	Current float32
 }
 
 func main() {
@@ -91,15 +92,16 @@ func getMetricMem(memRaw string, machine string) Metric {
 	metricMem := Metric{
 		Machine: machine,
 		Name:    "Mem",
-		Max:     float64(total),
-		Current: float64(used),
+		Max:     float32(total),
+		Current: float32(used),
 	}
 	return metricMem
 }
 
 func getMetricTemp(tempRaw string, machine string) Metric {
 	tempNDegrees := strings.Split(tempRaw, "=")[1]
-	current, _ := strconv.ParseFloat(tempNDegrees[:len(tempNDegrees)-3], 64)
+	current64, _ := strconv.ParseFloat(tempNDegrees[:len(tempNDegrees)-3], 32)
+	current := float32(current64)
 	metricTemp := Metric{
 		Machine: machine,
 		Name:    "Temp",
@@ -116,20 +118,31 @@ func getMetricDisk(diskRaw string, machine string) Metric {
 	metricDisk := Metric{
 		Machine: machine,
 		Name:    "Disk",
-		Max:     float64(total),
-		Current: float64(used),
+		Max:     float32(total),
+		Current: float32(used),
 	}
 	return metricDisk
 }
 
-func getPercentage(m Metric) float64 {
-	percentage := float64(m.Current) / float64(m.Max) * 100
+func getPercentage(m Metric) float32 {
+	percentage := float32(m.Current) / float32(m.Max) * 100
 	return percentage
 }
 
-func saveResults(metrics []Metric, file string) {
+func saveResults(metrics []Metric, filename string) {
+	t := time.Now()
+	timestamp := fmt.Sprintf("%d%02d%02dT%02d:%02d:%02d",
+		t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
 	for _, m := range metrics {
-		entry := m.Machine + ";" + m.Name + ";" + fmt.Sprintf("%f", m.Max) + ";" + fmt.Sprintf("%f", m.Current) + ";"
-		fmt.Println(entry)
+		entry := timestamp + ";" + m.Machine + ";" + m.Name + ";" + fmt.Sprintf("%f", m.Max) + ";" + fmt.Sprintf("%f", m.Current) + ";\n"
+		if _, err = f.WriteString(entry); err != nil {
+			panic(err)
+		}
 	}
 }

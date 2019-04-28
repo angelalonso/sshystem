@@ -17,3 +17,5 @@
 
 # Config file
 machine.list
+# Results file
+metrics.csv
