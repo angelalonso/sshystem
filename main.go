@@ -71,18 +71,16 @@ func getResults(conns []Connection) {
 	metrics := []Metric{}
 	for _, conn := range conns {
 		outMem, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/usr/bin/free")
-		//memMetric := getMetricMem(outMem, conn.Host)
 		metrics = append(metrics, getMetricMem(outMem, conn.Host))
 
 		outTemp, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/opt/vc/bin/vcgencmd measure_temp")
-		//tempMetric := getMetricTemp(outTemp, conn.Host)
 		metrics = append(metrics, getMetricTemp(outTemp, conn.Host))
 
 		outDisk, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "df /")
-		//diskMetric := getMetricDisk(outDisk, conn.Host)
 		metrics = append(metrics, getMetricDisk(outDisk, conn.Host))
 	}
-	fmt.Println(metrics)
+	//fmt.Println(metrics)
+	saveResults(metrics, "./metrics.csv")
 }
 
 func getMetricMem(memRaw string, machine string) Metric {
@@ -127,4 +125,11 @@ func getMetricDisk(diskRaw string, machine string) Metric {
 func getPercentage(m Metric) float64 {
 	percentage := float64(m.Current) / float64(m.Max) * 100
 	return percentage
+}
+
+func saveResults(metrics []Metric, file string) {
+	for _, m := range metrics {
+		entry := m.Machine + ";" + m.Name + ";" + fmt.Sprintf("%f", m.Max) + ";" + fmt.Sprintf("%f", m.Current) + ";"
+		fmt.Println(entry)
+	}
 }
