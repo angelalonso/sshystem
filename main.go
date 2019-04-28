@@ -27,7 +27,9 @@ type Metric struct {
 }
 
 func main() {
-	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	//dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	ex, _ := os.Executable()
+	dir := filepath.Dir(ex)
 	conns := readConfig(dir + "/machine.list")
 	getResults(conns, dir)
 }
