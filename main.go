@@ -18,8 +18,8 @@ type Connection struct {
 }
 
 type Metric struct {
-	Name    string
 	Machine string
+	Name    string
 	Max     float64
 	Current float64
 }
@@ -68,60 +68,63 @@ func sshCommand(endpoint string, port string, command string) (string, string) {
 
 func getResults(conns []Connection) {
 	// TODO: move the commands to a list file too
+	metrics := []Metric{}
 	for _, conn := range conns {
-		fmt.Println(conn.Host)
-
 		outMem, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/usr/bin/free")
-		memMetric := formatMem(outMem)
-		memPercentage := float64(memMetric.Current) / float64(memMetric.Max) * 100
-		fmt.Printf("Mem: %0.2f %%\n", memPercentage)
+		//memMetric := getMetricMem(outMem, conn.Host)
+		metrics = append(metrics, getMetricMem(outMem, conn.Host))
 
 		outTemp, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "/opt/vc/bin/vcgencmd measure_temp")
-		tempMetric := formatTemp(outTemp)
-		fmt.Printf("Temp: %0.2f °C\n", tempMetric.Current)
+		//tempMetric := getMetricTemp(outTemp, conn.Host)
+		metrics = append(metrics, getMetricTemp(outTemp, conn.Host))
 
 		outDisk, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "df /")
-		diskMetric := formatDisk(outDisk)
-		diskPercentage := float64(diskMetric.Current) / float64(diskMetric.Max) * 100
-		fmt.Printf("Disk: %0.2f %%\n", diskPercentage)
+		//diskMetric := getMetricDisk(outDisk, conn.Host)
+		metrics = append(metrics, getMetricDisk(outDisk, conn.Host))
 	}
+	fmt.Println(metrics)
 }
 
-func formatMem(memRaw string) Metric {
+func getMetricMem(memRaw string, machine string) Metric {
 	formatted := strings.Split(memRaw, "\n")
 	total, _ := strconv.Atoi(strings.Fields(formatted[1])[1])
 	free, _ := strconv.Atoi(strings.Fields(formatted[1])[3])
 	used := total - free
-	memMetric := Metric{
+	metricMem := Metric{
+		Machine: machine,
 		Name:    "Mem",
-		Machine: "",
 		Max:     float64(total),
 		Current: float64(used),
 	}
-	return memMetric
+	return metricMem
 }
 
-func formatTemp(tempRaw string) Metric {
+func getMetricTemp(tempRaw string, machine string) Metric {
 	tempNDegrees := strings.Split(tempRaw, "=")[1]
 	current, _ := strconv.ParseFloat(tempNDegrees[:len(tempNDegrees)-3], 64)
-	memMetric := Metric{
+	metricTemp := Metric{
+		Machine: machine,
 		Name:    "Temp",
-		Machine: "",
 		Max:     0,
 		Current: current,
 	}
-	return memMetric
+	return metricTemp
 }
 
-func formatDisk(diskRaw string) Metric {
+func getMetricDisk(diskRaw string, machine string) Metric {
 	formatted := strings.Split(diskRaw, "\n")
 	total, _ := strconv.Atoi(strings.Fields(formatted[1])[1])
 	used, _ := strconv.Atoi(strings.Fields(formatted[1])[2])
-	diskMetric := Metric{
-		Name:    "Mem",
-		Machine: "",
+	metricDisk := Metric{
+		Machine: machine,
+		Name:    "Disk",
 		Max:     float64(total),
 		Current: float64(used),
 	}
-	return diskMetric
+	return metricDisk
+}
+
+func getPercentage(m Metric) float64 {
+	percentage := float64(m.Current) / float64(m.Max) * 100
+	return percentage
 }

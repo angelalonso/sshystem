@@ -47,24 +47,34 @@ func TestSsh(t *testing.T) {
 	}
 }
 
-// TODO: run command
-// TODO: modify result
-func TestFormatMem(t *testing.T) {
+// TEST: format result for Temperature
+func TestGetMetricTemp(t *testing.T) {
+	out := "temp=52.1'C\n"
+	temp := getMetricTemp(out, "localhost")
+	fmt.Printf("%0.2f °C\n", temp.Current)
+}
+
+// TEST: format result for Memory
+func TestGetMetricMem(t *testing.T) {
 	out, err := mockCommand("/usr/bin/free", "")
 	if err != "" {
 		t.Errorf("Expected Not getting any error, but got " + err)
 	}
-	mem := formatMem(out)
-	percentage := float64(mem.Current) / float64(mem.Max) * 100
-	fmt.Printf("%0.2f %%\n", percentage)
+	mem := getMetricMem(out, "localhost")
+	fmt.Printf("%0.2f %%\n", getPercentage(mem))
 }
 
-func TestFormatTemp(t *testing.T) {
-	out := "temp=52.1'C\n"
-	temp := formatTemp(out)
-	fmt.Printf("%0.2f °C\n", temp.Current)
+// TEST: format result for Disk
+func TestGetMetricDisk(t *testing.T) {
+	out, err := mockCommand("df", "/")
+	if err != "" {
+		t.Errorf("Expected Not getting any error, but got " + err)
+	}
+	disk := getMetricDisk(out, "localhost")
+	fmt.Printf("%0.2f %%\n", getPercentage(disk))
 }
 
+// tool to run commands locally instead of remotely
 func mockCommand(command string, params ...string) (string, string) {
 	cmd := exec.Command(command, params...)
 	var outb, errb bytes.Buffer
