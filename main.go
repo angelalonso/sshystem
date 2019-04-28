@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+const (
+	Info             = "\033[1;34m%s\033[0m"
+	NormalPercentage = "\033[1;32m%f %%\033[0m"
+	WarnPercentage   = "\033[1;33m%f %%\033[0m"
+	ErrPercentage    = "\033[1;31m%f %%\033[0m"
+	NormalTemp       = "\033[1;32m%f °C\033[0m"
+	WarnTemp         = "\033[1;33m%f °C\033[0m"
+	ErrTemp          = "\033[1;31m%f °C\033[0m"
+)
+
 type Connection struct {
 	User string
 	Host string
@@ -84,8 +94,8 @@ func getResults(conns []Connection, maindir string) {
 		outDisk, _ := sshCommand(conn.User+"@"+conn.Host, conn.Port, "df /")
 		metrics = append(metrics, getMetricDisk(outDisk, conn.Host))
 	}
-	//fmt.Println(metrics)
-	saveResults(metrics, maindir+"/metrics.csv")
+	//saveResults(metrics, maindir+"/metrics.csv")
+	showResults(metrics)
 }
 
 func getMetricMem(memRaw string, machine string) Metric {
@@ -131,6 +141,48 @@ func getMetricDisk(diskRaw string, machine string) Metric {
 func getPercentage(m Metric) float32 {
 	percentage := float32(m.Current) / float32(m.Max) * 100
 	return percentage
+}
+
+func showResults(metrics []Metric) {
+	mach := ""
+	tempWarn := float32(50)
+	tempErr := float32(75)
+	warn := float32(50)
+	err := float32(75)
+	for _, m := range metrics {
+		if mach != m.Machine {
+			fmt.Printf(Info, m.Machine)
+			fmt.Println("")
+			mach = m.Machine
+		}
+		fmt.Printf(Info, "- "+m.Name+": ")
+		if m.Name == "Mem" || m.Name == "Disk" {
+			value := getPercentage(m)
+			if value > warn {
+				if value > err {
+					fmt.Printf(ErrPercentage, value)
+				} else {
+					fmt.Printf(WarnPercentage, value)
+				}
+			} else {
+				fmt.Printf(NormalPercentage, value)
+			}
+			fmt.Println("")
+		} else {
+			value := m.Current
+			if value > tempWarn {
+				if value > tempErr {
+					fmt.Printf(ErrTemp, value)
+				} else {
+					fmt.Printf(WarnTemp, value)
+				}
+			} else {
+				fmt.Printf(NormalTemp, value)
+			}
+			fmt.Println("")
+		}
+	}
+
 }
 
 func saveResults(metrics []Metric, filename string) {
